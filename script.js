@@ -11,16 +11,30 @@ nav?.querySelectorAll('a').forEach((link) => link.addEventListener('click', () =
   menuButton?.setAttribute('aria-expanded', 'false');
 }));
 
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach((entry) => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add('visible');
-      observer.unobserve(entry.target);
-    }
-  });
-}, { threshold: 0.12, rootMargin: '0px 0px -30px' });
+// Content stays visible unless reveal animations are successfully initialized.
+const revealItems = [...document.querySelectorAll('.reveal')];
+let revealObserver;
+try {
+  if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.remove('reveal-pending');
+          entry.target.classList.add('visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -30px' });
 
-document.querySelectorAll('.reveal').forEach((item) => observer.observe(item));
+    revealItems.forEach((item) => {
+      revealObserver.observe(item);
+      item.classList.add('reveal-pending');
+    });
+  }
+} catch {
+  revealObserver?.disconnect();
+  revealItems.forEach((item) => item.classList.remove('reveal-pending'));
+}
 
 const lightbox = document.querySelector('.lightbox');
 const lightboxImage = lightbox?.querySelector('img');
